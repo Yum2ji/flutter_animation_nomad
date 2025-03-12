@@ -41,7 +41,7 @@ class _ImplicitAnimationsScreenState extends State<ImplicitAnimationsScreen> {
                 ),
               ),
             ), */
-            AnimatedContainer(
+            /*            AnimatedContainer(
               curve: Curves.elasticOut,
               duration: Duration(
                 seconds: 2,
@@ -56,6 +56,29 @@ class _ImplicitAnimationsScreenState extends State<ImplicitAnimationsScreen> {
                 color: _visible ? Colors.red : Colors.amber,
                 borderRadius: BorderRadius.circular(_visible ? 100 : 0),
               ),
+            ),
+  */
+            TweenAnimationBuilder(
+              curve: Curves.bounceInOut,
+/*               tween: Tween(
+                begin: 10.0,
+                end: 20.0,
+              ), */
+
+              tween: ColorTween(
+                begin: Colors.yellow,
+                end: Colors.red,
+              ),
+              duration: Duration(
+                seconds: 5,
+              ),
+              builder: (context, value, child) {
+                return Image.network(
+                  "https://storage.googleapis.com/cms-storage-bucket/780e0e64d323aad2cdd5.png",
+                  color: value,
+                  colorBlendMode: BlendMode.colorBurn,
+                );
+              },
             ),
             SizedBox(
               height: 50,
