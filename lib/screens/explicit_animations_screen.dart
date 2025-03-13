@@ -32,13 +32,62 @@ class _ExplicitAnimationsScreenState extends State<ExplicitAnimationsScreen>
     duration: Duration(
       seconds: 2,
     ),
-  );
+    reverseDuration: Duration(
+      seconds: 1,
+    ),
+  )..addListener(
+      () {
+        _range.value = _animationController.value;
+      },
+    );
+/*     ..addStatusListener(
+      (status) {
+        if (status == AnimationStatus.completed) {
+          _animationController.reverse();
+        } else if (status == AnimationStatus.dismissed) {
+          _animationController.forward();
+        }
+      },
+    ); */
 
   // Animationcontroller 만 사용해 animation 조절하면 0~1 과 같이만 조절 color 같은거는 어렵기 때문에 아래의 Tween 사용
-  late final Animation<Color?> _color = ColorTween(
+/*   late final Animation<Color?> _color = ColorTween(
     begin: Colors.amber,
     end: Colors.red,
   ).animate(_animationController);
+ */
+  late final Animation<Decoration> _decoration = DecorationTween(
+    begin: BoxDecoration(
+      color: Colors.amber,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    end: BoxDecoration(
+      color: Colors.red,
+      borderRadius: BorderRadius.circular(120),
+    ),
+  ).animate(_curve);
+
+  late final Animation<double> _rotation = Tween(
+    begin: 0.0,
+    end: 0.5,
+  ).animate(_curve);
+
+  late final Animation<double> _scale = Tween(
+    begin: 1.0,
+    end: 1.1,
+  ).animate(_curve);
+
+  late final Animation<Offset> _position = Tween(
+    begin: Offset.zero,
+    end: Offset(0, -0.2),
+  ).animate(_curve);
+
+  //late 안쓰면안됨 _animationController가 late로 정의되어있으니까
+  late final CurvedAnimation _curve = CurvedAnimation(
+    parent: _animationController,
+    curve: Curves.elasticOut,
+    reverseCurve: Curves.bounceIn,
+  );
 
   @override
   void initState() {
@@ -59,6 +108,12 @@ class _ExplicitAnimationsScreenState extends State<ExplicitAnimationsScreen>
     */
   }
 
+  @override
+  void dispose() {
+    _animationController.dispose(); //animation 진행중에 뒤로가기 눌러버리면 error 나는
+    super.dispose();
+  }
+
   void _play() {
     _animationController.forward();
   }
@@ -69,6 +124,37 @@ class _ExplicitAnimationsScreenState extends State<ExplicitAnimationsScreen>
 
   void _rewind() {
     _animationController.reverse();
+  }
+
+  // double _value =0.0 과 같이 하지 않음. valueNotifier로 하는.setstate 하지 않아도 됨. build method를 거치지 않고도 변경된 부분을 잘 알아채는
+  final ValueNotifier<double> _range = ValueNotifier(0.0);
+
+  void _onChanged(double value) {
+/*  
+  ValueNotifier로 바뀌면 setstate안쓰게 됨.
+   setState(() {
+      _value = value;
+    }); */
+    _range.value = 0;
+
+    //이렇게 하면 animation 없이 값만 바꾸는는
+    _animationController.value = value;
+    //아래 내용은  animation됨.
+    //_animationController.animateTo(value);
+  }
+
+  bool _looping = false;
+  void _toggleLooping() {
+    if (_looping) {
+      _animationController.stop();
+    } else {
+      _animationController.repeat(
+        reverse: true,
+      );
+    }
+    setState(() {
+      _looping = !_looping;
+    });
   }
 
   @override
@@ -85,7 +171,7 @@ class _ExplicitAnimationsScreenState extends State<ExplicitAnimationsScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             //AnimatedBuilder로 하면 _animationController.addLister로 setstate하는 것과 다르게 딱 이부분만 build 되도록 해줌.
-            AnimatedBuilder(
+            /* AnimatedBuilder(
               animation: _color,
               builder: (context, child) {
                 return Container(
@@ -94,6 +180,28 @@ class _ExplicitAnimationsScreenState extends State<ExplicitAnimationsScreen>
                   height: 400,
                 );
               },
+            ),
+            */
+
+            //ExplicitWidget
+            SlideTransition(
+              position: _position,
+              child: ScaleTransition(
+                scale: _scale,
+                child: RotationTransition(
+                  turns: _rotation,
+                  child: DecoratedBoxTransition(
+                    decoration: _decoration,
+                    child: SizedBox(
+                      height: 400,
+                      width: 400,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 50,
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -116,8 +224,26 @@ class _ExplicitAnimationsScreenState extends State<ExplicitAnimationsScreen>
                     "rewind",
                   ),
                 ),
+                ElevatedButton(
+                  onPressed: _toggleLooping,
+                  child: Text(
+                    _looping ? "Stop looping" : "Start looping",
+                  ),
+                ),
               ],
             ),
+            SizedBox(
+              height: 25,
+            ),
+            ValueListenableBuilder(
+              valueListenable: _range,
+              builder: (context, value, child) {
+                return Slider(
+                  value: value,
+                  onChanged: _onChanged,
+                );
+              },
+            )
           ],
         ),
       ),
